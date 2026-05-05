@@ -69,19 +69,28 @@ public class FollowService {
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
     }
 
-    //Followers count
-    public long getFollowersCount(Long userId) {
-        return followRepository.countByFolloweeUserId(userId);
+    public FollowResponse getFollowStatsByEmail(String email) {
+        User user = getUserByEmail(email);
+        long followers = followRepository.countByFolloweeUserId(user.getUserId());
+        long following = followRepository.countByFollowerUserId(user.getUserId());
+        return new FollowResponse(followers, following);
     }
 
-    //Following count
-    public long getFollowingCount(Long userId) {
-        return followRepository.countByFollowerUserId(userId);
-    }
+    public List<FollowUserResponse> getFollowingByEmail(String email) {
+        User user = getUserByEmail(email);
 
-    //List followers
-    public List<FollowUserResponse> getFollowers(Long userId) {
-        return followRepository.findByFolloweeUserId(userId)
+        return followRepository.findByFollowerUserId(user.getUserId())
+                .stream()
+                .map(f -> new FollowUserResponse(
+                        f.getFollowee().getUserId(),
+                        f.getFollowee().getName()
+                ))
+                .toList();
+    }
+    public List<FollowUserResponse> getFollowersByEmail(String email) {
+        User user = getUserByEmail(email);
+
+        return followRepository.findByFolloweeUserId(user.getUserId())
                 .stream()
                 .map(f -> new FollowUserResponse(
                         f.getFollower().getUserId(),
@@ -90,24 +99,6 @@ public class FollowService {
                 .toList();
     }
 
-    //List following
-    public List<FollowUserResponse> getFollowing(Long userId) {
-        return followRepository.findByFollowerUserId(userId)
-                .stream()
-                .map(f -> new FollowUserResponse(
-                        f.getFollowee().getUserId(),
-                        f.getFollowee().getName()
-                ))
-                .toList();
-    }
-    public FollowResponse getFollowStatsByEmail(String email) {
-        User user = getUserByEmail(email);
-        long followers = followRepository.countByFolloweeUserId(user.getUserId());
-        long following = followRepository.countByFollowerUserId(user.getUserId());
-        return new FollowResponse(followers, following);
-    }
-
-    //Mapper
     public FollowResponse getFollowStats(Long userId) {
         long followers = followRepository.countByFolloweeUserId(userId);
         long following = followRepository.countByFollowerUserId(userId);

@@ -41,35 +41,23 @@ public class FollowController {
         );
     }
 
-    // followers count
-    @GetMapping("/followers/count/{userId}")
-    public ResponseEntity<Long> followersCount(@PathVariable Long userId) {
-        return ResponseEntity.ok(followService.getFollowersCount(userId));
-    }
-
-    // following count
-    @GetMapping("/following/count/{userId}")
-    public ResponseEntity<Long> followingCount(@PathVariable Long userId) {
-        return ResponseEntity.ok(followService.getFollowingCount(userId));
-    }
-
-    @GetMapping("/stats/{userId}")
-    public FollowResponse getStats(@PathVariable Long userId) {
-        return followService.getFollowStats(userId);
-    }
-
     @GetMapping("/me")
     public FollowResponse getMyStats(Authentication auth) {
         return followService.getFollowStatsByEmail(auth.getName());
     }
 
-    @GetMapping("/followers/{userId}")
-    public List<FollowUserResponse> getFollowers(@PathVariable Long userId) {
-        return followService.getFollowers(userId);
+    @GetMapping("/following/me")
+    public List<FollowUserResponse> getMyFollowing(Authentication auth) {
+        return followService.getFollowingByEmail(auth.getName());
     }
 
-    @GetMapping("/following/{userId}")
-    public List<FollowUserResponse> getFollowing(@PathVariable Long userId) {
-        return followService.getFollowing(userId);
+    @GetMapping("/followers/me")
+    public List<FollowUserResponse> getMyFollowers(Authentication auth) {
+        return followService.getFollowersByEmail(auth.getName());
+    }
+
+    @GetMapping("/stats/{userId}")
+    public FollowResponse getStats(@PathVariable Long userId) {
+        return followService.getFollowStats(userId);
     }
 }
