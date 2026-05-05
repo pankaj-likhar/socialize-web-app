@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { getComments, addComment } from "../services/api";
+import { subscribeToComments } from "../services/websocket"; // ✅ ADD
 
 function CommentBox({ postId }) {
   const [comments, setComments] = useState([]);
   const [text, setText] = useState("");
 
+  // 🔹 Load initial comments (only once)
   useEffect(() => {
     loadComments();
   }, [postId]);
@@ -14,12 +16,32 @@ function CommentBox({ postId }) {
     setComments(data.content || []);
   };
 
+  // 🔥 REAL-TIME SUBSCRIPTION
+  useEffect(() => {
+    const interval = setInterval(() => {
+      subscribeToComments(postId, (event) => {
+        setComments(prev => {
+          // ❗ prevent duplicates
+          if (prev.some(c => c.commentId === event.comment.commentId)) {
+            return prev;
+          }
+          return [event.comment, ...prev];
+        });
+      });
+    }, 300);
+
+    return () => clearInterval(interval);
+  }, [postId]);
+
+  // 🔹 Add comment
   const handleAddComment = async () => {
     if (!text.trim()) return;
 
     await addComment(postId, text);
     setText("");
-    loadComments(); // refresh
+
+    // ❌ REMOVE THIS
+    // loadComments();
   };
 
   return (
