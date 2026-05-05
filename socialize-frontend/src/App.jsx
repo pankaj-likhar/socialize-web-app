@@ -1,4 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useEffect } from "react"; // ✅ ADD
+import { connectWebSocket } from "./services/websocket"; // ✅ ADD
+
 import Login from "./pages/Login";
 import Home from "./pages/Home";
 import PrivateRoute from "./components/PrivateRoute";
@@ -7,6 +10,12 @@ import Users from "./pages/Users";
 import Profile from "./pages/Profile";
 
 function App() {
+
+  // 🔥 CONNECT WEBSOCKET ON APP START
+  useEffect(() => {
+    connectWebSocket();
+  }, []);
+
   return (
     <BrowserRouter>
       <Routes>
@@ -20,12 +29,18 @@ function App() {
             </PrivateRoute>
           }
         />
+
         <Route path="/register" element={<Register />} />
-        <Route path="/users" element={
-          <PrivateRoute>
-            <Users />
-          </PrivateRoute>
-        } />
+
+        <Route
+          path="/users"
+          element={
+            <PrivateRoute>
+              <Users />
+            </PrivateRoute>
+          }
+        />
+
         <Route path="/profile/:userId" element={<Profile />} />
       </Routes>
     </BrowserRouter>
