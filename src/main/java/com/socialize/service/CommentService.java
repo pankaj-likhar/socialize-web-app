@@ -1,5 +1,6 @@
 package com.socialize.service;
 
+import com.socialize.dto.CommentEvent;
 import com.socialize.dto.CommentRequest;
 import com.socialize.dto.CommentResponse;
 import com.socialize.entity.Comment;
@@ -15,6 +16,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -23,11 +25,14 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
-    public CommentService(CommentRepository commentRepository, PostRepository postRepository, UserRepository userRepository) {
+    public CommentService(CommentRepository commentRepository, PostRepository postRepository,
+                          UserRepository userRepository, SimpMessagingTemplate messagingTemplate) {
         this.commentRepository = commentRepository;
         this.postRepository = postRepository;
         this.userRepository = userRepository;
+        this.messagingTemplate = messagingTemplate;
     }
 
     //create comment
@@ -44,7 +49,17 @@ public class CommentService {
         newComment.setUser(user);
         newComment.setPost(post);
         Comment saved = commentRepository.save(newComment);
-        return mapToDTO(saved);
+
+        CommentResponse response = mapToDTO(saved);
+
+        // 🔥 REAL-TIME PUSH
+        messagingTemplate.convertAndSend(
+                "/topic/comments/" + postId,
+                new CommentEvent(postId, response)
+        );
+
+        return response;
+//        return mapToDTO(saved);
     }
 
     //get all comments of a post
