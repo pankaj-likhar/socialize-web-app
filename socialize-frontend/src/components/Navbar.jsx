@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
+import logo from "../assets/logo.png";
 
 function Navbar() {
   const navigate = useNavigate();
@@ -29,14 +30,21 @@ function Navbar() {
     <div className="bg-white shadow px-6 py-3 flex justify-between items-center">
 
       {/* LEFT → Logo only */}
-      <div>
-        <h1
-          onClick={() => navigate("/")}
-          className="text-xl font-bold cursor-pointer text-blue-600"
-        >
-          Socialize
-        </h1>
-      </div>
+  
+      <div
+  onClick={() => navigate("/")}
+  className="flex items-center gap-2 cursor-pointer"
+>
+  <img
+    src={logo}
+    alt="logo"
+    className="w-12 h-12"
+  />
+
+  <span className="text-xl font-bold text-blue-600">
+    Socialize
+  </span>
+</div>
 
       {/* RIGHT → Everything else */}
       <div className="flex items-center gap-6">
