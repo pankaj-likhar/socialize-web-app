@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -22,11 +23,13 @@ public class PostController {
     }
 
     //create post
-    @PostMapping
-    public PostResponse createPost(@Valid @RequestBody Post post,
-                                   Authentication auth) {
+    @PostMapping(consumes = {"multipart/form-data"})
+    public PostResponse createPost(
+            @RequestParam("content") String content,
+            @RequestParam(value = "image", required = false) MultipartFile image,
+            Authentication auth) {
 
-        return postService.createNewPost(post, auth.getName());
+        return postService.createNewPost(content, image, auth.getName());
     }
 
     //feed posts
