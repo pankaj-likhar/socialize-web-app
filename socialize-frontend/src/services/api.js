@@ -170,3 +170,27 @@ export const deletePost = async (postId) => {
 
   return response.text();
 };
+
+export const uploadProfileImage = async (file) => {
+  const formData = new FormData();
+  formData.append("image", file);
+
+  const token = localStorage.getItem("token");
+
+  const response = await fetch(
+    "http://localhost:8080/api/users/profile-image",
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: "Bearer " + token
+      },
+      body: formData
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to upload profile image");
+  }
+
+  return response.json();
+};

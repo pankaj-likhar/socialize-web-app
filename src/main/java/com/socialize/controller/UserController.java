@@ -4,6 +4,8 @@ import com.socialize.entity.User;
 import com.socialize.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.security.core.Authentication;
 
 import java.util.List;
 
@@ -41,5 +43,16 @@ public class UserController {
     @DeleteMapping("/{id}")
     public String deleteUserAccount(@PathVariable Long id) {
         return userService.deleteUser(id);
+    }
+
+    @PatchMapping("/profile-image")
+    public User uploadProfileImage(
+            @RequestParam("image") MultipartFile image,
+            Authentication auth) {
+
+        return userService.uploadProfileImage(
+                auth.getName(),
+                image
+        );
     }
 }

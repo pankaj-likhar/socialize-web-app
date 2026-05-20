@@ -1,3 +1,5 @@
+// src/pages/Users.jsx
+
 import { useEffect, useState } from "react";
 import {
   getAllUsers,
@@ -7,15 +9,15 @@ import {
 } from "../services/api";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
-import { jwtDecode } from "jwt-decode"; // ✅ FIXED import
+import { jwtDecode } from "jwt-decode";
 
 function Users() {
   const [users, setUsers] = useState([]);
-  const [followingIds, setFollowingIds] = useState([]); // ✅ ADDED
+  const [followingIds, setFollowingIds] = useState([]);
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
 
-  // 🔐 Get logged-in user email
+  // Get logged-in user email
   let currentUserEmail = null;
 
   try {
@@ -30,7 +32,7 @@ function Users() {
 
   useEffect(() => {
     loadUsers();
-    loadFollowing(); // ✅ IMPORTANT
+    loadFollowing();
   }, []);
 
   const loadUsers = async () => {
@@ -38,41 +40,35 @@ function Users() {
       const data = await getAllUsers();
       setUsers(data);
     } catch (e) {
-      console.error("Failed to load users");
+      console.error("Failed to load users", e);
     }
   };
 
   const loadFollowing = async () => {
-  try {
-    const data = await getFollowing();
-
-    // ✅ Your response structure:
-    // [{ userId: 2, name: "Tom Cruise" }]
-    const ids = data.map(u => u.userId);
-
-    setFollowingIds(ids);
-  } catch (e) {
-    console.error("Failed to load following");
-  }
-};
+    try {
+      const data = await getFollowing();
+      const ids = data.map((u) => u.userId);
+      setFollowingIds(ids);
+    } catch (e) {
+      console.error("Failed to load following", e);
+    }
+  };
 
   const handleFollowToggle = async (userId) => {
     try {
       if (followingIds.includes(userId)) {
-        // 👉 UNFOLLOW
         await unfollowUser(userId);
 
-        setFollowingIds(prev =>
-          prev.filter(id => id !== userId)
+        setFollowingIds((prev) =>
+          prev.filter((id) => id !== userId)
         );
       } else {
-        // 👉 FOLLOW
         await followUser(userId);
 
-        setFollowingIds(prev => [...prev, userId]);
+        setFollowingIds((prev) => [...prev, userId]);
       }
     } catch (e) {
-      console.error("Follow/Unfollow failed");
+      console.error("Follow/Unfollow failed", e);
     }
   };
 
@@ -81,12 +77,11 @@ function Users() {
       <Navbar />
 
       <div className="max-w-4xl mx-auto mt-6 px-4">
-
         <h2 className="text-xl font-semibold mb-4 text-gray-800">
           Find Users
         </h2>
 
-        {/* 🔍 Search */}
+        {/* Search */}
         <div className="mb-4">
           <input
             type="text"
@@ -97,30 +92,35 @@ function Users() {
           />
         </div>
 
-        {/* 👥 Users */}
+        {/* Users Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-
           {users
-            .filter(user =>
-              user.name.toLowerCase().includes(search.toLowerCase())
+            .filter((user) =>
+              user.name
+                .toLowerCase()
+                .includes(search.toLowerCase())
             )
-            .map(user => (
-              // <div
-              //   key={user.userId}
-              //   className="bg-white p-4 rounded-xl shadow hover:shadow-md transition"
-              // >
+            .map((user) => (
               <div
-              key={user.userId}
-              onClick={() => navigate(`/profile/${user.userId}`)}
-              className="bg-white p-4 rounded-xl shadow hover:shadow-md transition cursor-pointer"
+                key={user.userId}
+                onClick={() =>
+                  navigate(`/profile/${user.userId}`)
+                }
+                className="bg-white p-4 rounded-xl shadow hover:shadow-md transition cursor-pointer"
               >
-
                 <div className="flex flex-col items-center text-center">
-
-                  {/* Avatar */}
-                  <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-xl font-bold text-blue-600 mb-2">
-                    {user.name.charAt(0).toUpperCase()}
-                  </div>
+                  {/* Profile Image */}
+                  {user.profileImageUrl ? (
+                    <img
+                      src={user.profileImageUrl}
+                      alt={user.name}
+                      className="w-16 h-16 rounded-full object-cover border-2 border-blue-100 mb-2"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-xl font-bold text-blue-600 mb-2">
+                      {user.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
 
                   {/* Name */}
                   <h3 className="font-semibold text-gray-800">
@@ -133,31 +133,35 @@ function Users() {
                   </p>
 
                   {/* Follow Button */}
-                 <button
-  disabled={user.email === currentUserEmail}
-  onClick={(e) => {
-    e.stopPropagation(); // 🔥 PREVENT navigation
-    handleFollowToggle(user.userId);
-  }}
-  className={`px-4 py-1 rounded-lg text-sm ${
-    user.email === currentUserEmail
-      ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-      : followingIds.includes(user.userId)
-      ? "bg-red-500 text-white hover:bg-red-600"
-      : "bg-blue-500 text-white hover:bg-blue-600"
-  }`}
->
-  {user.email === currentUserEmail
-    ? "You"
-    : followingIds.includes(user.userId)
-    ? "Unfollow"
-    : "Follow"}
-</button>
-
+                  <button
+                    disabled={
+                      user.email === currentUserEmail
+                    }
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleFollowToggle(user.userId);
+                    }}
+                    className={`px-4 py-1 rounded-lg text-sm ${
+                      user.email === currentUserEmail
+                        ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                        : followingIds.includes(
+                            user.userId
+                          )
+                        ? "bg-red-500 text-white hover:bg-red-600"
+                        : "bg-blue-500 text-white hover:bg-blue-600"
+                    }`}
+                  >
+                    {user.email === currentUserEmail
+                      ? "You"
+                      : followingIds.includes(
+                          user.userId
+                        )
+                      ? "Unfollow"
+                      : "Follow"}
+                  </button>
                 </div>
               </div>
             ))}
-
         </div>
       </div>
     </div>
