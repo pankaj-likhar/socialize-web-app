@@ -1,3 +1,5 @@
+// src/components/PostCard.jsx
+
 import { useEffect, useState } from "react";
 import {
   likePost,
@@ -5,7 +7,8 @@ import {
   getLikeStatus,
   followUser,
   unfollowUser,
-  deletePost
+  deletePost,
+  getUserById
 } from "../services/api";
 import CommentBox from "./CommentBox";
 import { subscribeToLikes } from "../services/websocket";
@@ -17,7 +20,13 @@ function PostCard({ post, onDelete }) {
   const [following, setFollowing] = useState(false);
   const [showComments, setShowComments] = useState(false);
 
-  // Get current logged-in user ID from JWT
+  // Store latest user details so updated profile image is shown
+  const [postUser, setPostUser] = useState({
+    name: post.userName,
+    profileImageUrl: post.profileImageUrl || null
+  });
+
+  // Get current logged-in user ID
   let currentUserId = null;
 
   try {
@@ -30,11 +39,32 @@ function PostCard({ post, onDelete }) {
     console.error("JWT decode failed");
   }
 
-  // Check if current user is owner of the post
   const isOwner =
     Number(post.userId) === Number(currentUserId);
 
-  // Load initial like status
+  // Load latest user data (important after profile image update)
+  useEffect(() => {
+    const loadPostUser = async () => {
+      try {
+        const userData = await getUserById(post.userId);
+
+        setPostUser({
+          name: userData.name,
+          profileImageUrl:
+            userData.profileImageUrl || null
+        });
+      } catch (error) {
+        console.error(
+          "Failed to load post user data",
+          error
+        );
+      }
+    };
+
+    loadPostUser();
+  }, [post.userId]);
+
+  // Load like status
   useEffect(() => {
     getLikeStatus(post.postId).then((data) => {
       setLiked(data.liked);
@@ -42,7 +72,7 @@ function PostCard({ post, onDelete }) {
     });
   }, [post.postId]);
 
-  // Real-time like updates
+  // Real-time likes
   useEffect(() => {
     const interval = setInterval(() => {
       subscribeToLikes(post.postId, (event) => {
@@ -53,7 +83,6 @@ function PostCard({ post, onDelete }) {
     return () => clearInterval(interval);
   }, [post.postId]);
 
-  // Like / Unlike
   const handleLike = async () => {
     try {
       if (liked) {
@@ -68,7 +97,6 @@ function PostCard({ post, onDelete }) {
     }
   };
 
-  // Follow / Unfollow
   const handleFollow = async () => {
     try {
       if (following) {
@@ -83,7 +111,6 @@ function PostCard({ post, onDelete }) {
     }
   };
 
-  // Delete Post
   const handleDelete = async () => {
     const confirmed = window.confirm(
       "Are you sure you want to delete this post?"
@@ -94,7 +121,6 @@ function PostCard({ post, onDelete }) {
     try {
       await deletePost(post.postId);
 
-      // Remove post from UI
       if (onDelete) {
         onDelete(post.postId);
       }
@@ -109,20 +135,27 @@ function PostCard({ post, onDelete }) {
       {/* Header */}
       <div className="flex justify-between items-center mb-3">
         <div className="flex items-center gap-2">
-          {/* Avatar */}
-          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600">
-            {post.userName.charAt(0).toUpperCase()}
-          </div>
+          {/* Profile Image */}
+          {postUser.profileImageUrl ? (
+            <img
+              src={postUser.profileImageUrl}
+              alt={postUser.name}
+              className="w-10 h-10 rounded-full object-cover"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600">
+              {postUser.name.charAt(0).toUpperCase()}
+            </div>
+          )}
 
           {/* Username */}
           <p className="font-semibold text-gray-800">
-            {post.userName}
+            {postUser.name}
           </p>
         </div>
 
         {/* Actions */}
         <div className="flex items-center gap-3">
-          {/* Show Follow button only for other users */}
           {!isOwner && (
             <button
               onClick={handleFollow}
@@ -132,7 +165,6 @@ function PostCard({ post, onDelete }) {
             </button>
           )}
 
-          {/* Show Delete button only for owner */}
           {isOwner && (
             <button
               onClick={handleDelete}
@@ -144,7 +176,7 @@ function PostCard({ post, onDelete }) {
         </div>
       </div>
 
-      {/* Post Content */}
+      {/* Content */}
       {post.content && (
         <p className="text-gray-700 mb-3 leading-relaxed">
           {post.content}
@@ -164,7 +196,6 @@ function PostCard({ post, onDelete }) {
 
       {/* Actions */}
       <div className="flex items-center gap-6 text-sm mb-3">
-        {/* Like */}
         <button
           onClick={handleLike}
           className="flex items-center gap-1 text-red-500 hover:scale-105 transition"
@@ -173,16 +204,17 @@ function PostCard({ post, onDelete }) {
           <span>{count}</span>
         </button>
 
-        {/* Comments */}
         <button
-          onClick={() => setShowComments(!showComments)}
+          onClick={() =>
+            setShowComments(!showComments)
+          }
           className="text-gray-500 hover:text-blue-500"
         >
           💬 Comments
         </button>
       </div>
 
-      {/* Comment Box */}
+      {/* Comments */}
       {showComments && (
         <CommentBox postId={post.postId} />
       )}
