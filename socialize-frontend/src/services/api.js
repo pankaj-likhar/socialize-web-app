@@ -17,12 +17,27 @@ export const getFeed = async (page = 0, size = 5) => {
   return response.json();
 };
 
-export const createPost = async (content) => {
+export const createPost = async (content, imageFile = null) => {
+  const token = localStorage.getItem("token");
+
+  const formData = new FormData();
+  formData.append("content", content);
+
+  if (imageFile) {
+    formData.append("image", imageFile);
+  }
+
   const response = await fetch(`${BASE_URL}/posts`, {
     method: "POST",
-    headers: getAuthHeaders(),
-    body: JSON.stringify({ content })
+    headers: {
+      Authorization: "Bearer " + token
+    },
+    body: formData
   });
+
+  if (!response.ok) {
+    throw new Error("Failed to create post");
+  }
 
   return response.json();
 };
@@ -141,4 +156,17 @@ export const getCurrentUser = async () => {
     headers: getAuthHeaders()
   });
   return res.json(); // { userId, name, email }
+};
+
+export const deletePost = async (postId) => {
+  const response = await fetch(`${BASE_URL}/posts/${postId}`, {
+    method: "DELETE",
+    headers: getAuthHeaders()
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to delete post");
+  }
+
+  return response.text();
 };
