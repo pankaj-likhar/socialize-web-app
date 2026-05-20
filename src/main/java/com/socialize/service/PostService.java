@@ -16,8 +16,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class PostService {
@@ -25,22 +27,39 @@ public class PostService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final FollowRepository followRepository;
+    private final ImageUploadService imageUploadService;
 
-    public PostService(PostRepository postRepository, UserRepository userRepository, FollowRepository followRepository) {
+    public PostService(PostRepository postRepository, UserRepository userRepository,
+                       FollowRepository followRepository,  ImageUploadService imageUploadService) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.followRepository = followRepository;
+        this.imageUploadService = imageUploadService;
     }
 
     //create new post
-    public PostResponse createNewPost(Post post, String email) {
-        if (post.getContent() == null || post.getContent().isBlank()) {
+    public PostResponse createNewPost(String content,
+                                      MultipartFile image,
+                                      String email) {
+
+        if (content == null || content.isBlank()) {
             throw new BadRequestException("Post content cannot be empty");
         }
+
         User user = findUserByEmail(email);
+
         Post newPost = new Post();
-        newPost.setContent(post.getContent());
+        newPost.setContent(content);
         newPost.setUser(user);
+
+        // Upload image if provided
+        if (image != null && !image.isEmpty()) {
+            Map uploadResult = imageUploadService.uploadImage(image);
+
+            newPost.setImageUrl((String) uploadResult.get("secure_url"));
+            newPost.setImagePublicId((String) uploadResult.get("public_id"));
+        }
+
         Post savedPost = postRepository.save(newPost);
         return mapToDTO(savedPost);
     }
@@ -107,10 +126,19 @@ public class PostService {
     public String deletePost(Long postId, String email) {
         User user = findUserByEmail(email);
         Post post = findPost(postId);
-        if(!post.getUser().getUserId().equals(user.getUserId())) {
+
+        if (!post.getUser().getUserId().equals(user.getUserId())) {
             throw new UnauthorizedException("You are not allowed to delete this post");
         }
-        postRepository.deleteById(postId);
+
+        // Delete image from Cloudinary if it exists
+        if (post.getImagePublicId() != null && !post.getImagePublicId().isBlank()) {
+            imageUploadService.deleteImage(post.getImagePublicId());
+        }
+
+        // Delete post from database
+        postRepository.delete(post);
+
         return "Post deleted successfully";
     }
 
@@ -133,6 +161,7 @@ public class PostService {
                 .createdAt(post.getCreatedAt())
                 .userId(post.getUser().getUserId())
                 .userName(post.getUser().getName())
+                .imageUrl(post.getImageUrl())
                 .build();
     }
 }

@@ -27,6 +27,9 @@ public class Post {
     @Column(name = "content")
     private String content;
 
+    private String imageUrl;
+    private String imagePublicId;
+
     @Column(name = "postDate")
     private LocalDateTime createdAt;
 
